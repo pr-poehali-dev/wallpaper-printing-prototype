@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -142,6 +142,10 @@ export default function Index() {
   const [activeView, setActiveView] = useState<'catalog' | 'profile'>('catalog');
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedMaterial, setSelectedMaterial] = useState('');
+  const [showCustomUpload, setShowCustomUpload] = useState(false);
+  const [customImage, setCustomImage] = useState<string | null>(null);
+  const [customImageName, setCustomImageName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const categories = ['Все', 'Природа', 'Города', 'Абстракция'];
 
@@ -195,6 +199,49 @@ export default function Index() {
     } else if (promoCode === 'LOYAL20') {
       setAppliedPromo({ code: promoCode, discount: 20 });
     }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCustomImage(reader.result as string);
+        setCustomImageName(file.name);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const createCustomProduct = () => {
+    if (!customImage || !customImageName || !selectedSize || !selectedMaterial) return;
+
+    const customProduct: Product = {
+      id: Date.now(),
+      name: customImageName.replace(/\.[^/.]+$/, ''),
+      category: 'Пользовательские',
+      style: 'Индивидуальный дизайн',
+      price: 5800,
+      image: customImage,
+      sizes: ['2x3м', '3x4м', '4x5м'],
+      materials: ['Флизелин', 'Винил', 'Бумага'],
+    };
+
+    setCart([
+      ...cart,
+      {
+        ...customProduct,
+        selectedSize,
+        selectedMaterial,
+        quantity: 1,
+      },
+    ]);
+
+    setShowCustomUpload(false);
+    setCustomImage(null);
+    setCustomImageName('');
+    setSelectedSize('');
+    setSelectedMaterial('');
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + calculatePrice(item) * item.quantity, 0);
@@ -380,19 +427,29 @@ export default function Index() {
               <Badge variant="secondary">LOYAL20 - 20% постоянным клиентам</Badge>
             </div>
 
-            <Tabs defaultValue="Все" className="mb-12">
-              <TabsList className="w-full justify-start">
-                {categories.map((category) => (
-                  <TabsTrigger
-                    key={category}
-                    value={category}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {category}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+            <div className="flex items-center justify-between mb-12">
+              <Tabs defaultValue="Все" className="flex-1">
+                <TabsList className="w-full justify-start">
+                  {categories.map((category) => (
+                    <TabsTrigger
+                      key={category}
+                      value={category}
+                      onClick={() => setSelectedCategory(category)}
+                    >
+                      {category}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+              <Button
+                onClick={() => setShowCustomUpload(true)}
+                className="ml-4"
+                size="lg"
+              >
+                <Icon name="Upload" size={20} className="mr-2" />
+                Загрузить своё фото
+              </Button>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredProducts.map((product) => (
@@ -674,6 +731,138 @@ export default function Index() {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCustomUpload} onOpenChange={setShowCustomUpload}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Загрузить своё изображение</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-12 text-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              {!customImage ? (
+                <div className="space-y-4">
+                  <Icon name="Upload" size={48} className="mx-auto text-muted-foreground" />
+                  <div>
+                    <p className="text-lg font-semibold mb-2">
+                      Выберите изображение для печати
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      JPG, PNG или WEBP до 10MB
+                    </p>
+                  </div>
+                  <Button onClick={() => fileInputRef.current?.click()} size="lg">
+                    <Icon name="FolderOpen" size={20} className="mr-2" />
+                    Выбрать файл
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <img
+                    src={customImage}
+                    alt="Preview"
+                    className="max-h-80 mx-auto rounded-lg object-contain"
+                  />
+                  <div className="flex items-center justify-center gap-2">
+                    <Icon name="Image" size={16} className="text-primary" />
+                    <span className="font-medium">{customImageName}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCustomImage(null);
+                      setCustomImageName('');
+                    }}
+                  >
+                    Выбрать другое изображение
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {customImage && (
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-sm font-semibold mb-2 block">Выберите размер:</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['2x3м', '3x4м', '4x5м'].map((size) => (
+                      <Button
+                        key={size}
+                        variant={selectedSize === size ? 'default' : 'outline'}
+                        onClick={() => setSelectedSize(size)}
+                        className="w-full"
+                      >
+                        {size}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold mb-2 block">Выберите материал:</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['Флизелин', 'Винил', 'Бумага'].map((material) => (
+                      <Button
+                        key={material}
+                        variant={selectedMaterial === material ? 'default' : 'outline'}
+                        onClick={() => setSelectedMaterial(material)}
+                        className="w-full"
+                      >
+                        {material}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {customImage && (
+              <>
+                <div className="bg-primary/5 p-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold">Стоимость:</span>
+                    <span className="text-2xl font-bold">5,800 ₽</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Индивидуальная печать на выбранном материале
+                  </p>
+                </div>
+
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={createCustomProduct}
+                  disabled={!selectedSize || !selectedMaterial}
+                >
+                  <Icon name="ShoppingCart" size={20} className="mr-2" />
+                  Добавить в корзину
+                </Button>
+
+                <div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Icon name="CheckCircle" size={16} className="text-primary" />
+                    <span>Профессиональная цветокоррекция</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Icon name="CheckCircle" size={16} className="text-primary" />
+                    <span>Печать высокого разрешения</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Icon name="CheckCircle" size={16} className="text-primary" />
+                    <span>Бесплатная консультация по подготовке файла</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
