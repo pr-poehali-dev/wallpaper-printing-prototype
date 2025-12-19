@@ -897,8 +897,8 @@ export default function Index() {
             <div>
               <h4 className="font-semibold mb-4">Контакты</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>+7 (999) 123-45-67</li>
-                <li>info@photowalls.ru</li>
+                <li>+7 (913) 991-70-08</li>
+                <li>sosiski@photowalls.ru</li>
               </ul>
             </div>
           </div>
