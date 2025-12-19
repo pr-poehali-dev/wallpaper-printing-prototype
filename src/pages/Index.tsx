@@ -423,8 +423,8 @@ export default function Index() {
             <div className="mb-8 flex items-center gap-2 text-sm">
               <Icon name="Tag" size={16} className="text-primary" />
               <span className="font-semibold">Специальные предложения:</span>
-              <Badge variant="secondary">WELCOME10 - 10% скидка для новых клиентов</Badge>
-              <Badge variant="secondary">LOYAL20 - 20% постоянным клиентам</Badge>
+              <Badge variant="secondary">WELCOMESOSISKI10 - 10% скидка для новых клиентов</Badge>
+              <Badge variant="secondary">SOSISKI20 - 20% постоянным клиентам</Badge>
             </div>
 
             <div className="flex items-center justify-between mb-12">
